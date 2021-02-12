@@ -1,0 +1,26 @@
+#!/usr/bin/env node
+
+const depcheck = require('depcheck')
+const execa = require('execa')
+
+main()
+
+async function main () {
+  console.log(process.cwd())
+  const unused = await depcheck(process.cwd(), { skipMissing: true })
+
+  const { devDependencies, dependencies } = unused
+
+  for (const devDep of devDependencies) {
+    const { stdout } = await execa('npm', ['uninstall', devDep]);
+    console.log(stdout)
+  }
+
+  for (const dep of dependencies) {
+    const { stdout } = await execa('npm', ['uninstall', dep]);
+    console.log(stdout)
+  }
+
+  console.log(JSON.stringify(devDependencies))
+  console.log(JSON.stringify(dependencies))
+}
