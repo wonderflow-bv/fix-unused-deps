@@ -3,4 +3,6 @@ NPM command to automatically remove unused dependencies
 
 ## Usage
 
-cd into your npm package folder, then run `fix-unused-deps`
+1. `npm i -g fix-unused-deps`
+2. cd into your npm package folder
+3. run `fix-unused-deps`
