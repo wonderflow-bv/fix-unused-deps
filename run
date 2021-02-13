@@ -2,29 +2,48 @@
 
 const depcheck = require('depcheck')
 const execa = require('execa')
+const yargs = require('yargs')
+const path = require('path')
+const fs = require('fs')
 
-main()
+function log (str) {
+  const { name } = require(path.resolve(process.cwd(), 'package.json'))
+  console.log(name, '>', str)
+}
 
-async function main () {
-  const packageFolder = process.cwd()
+yargs(process.argv.slice(2)).command({
+  command: '$0',
+  desc: 'command to remove unused deps',
+  builder: { dryRun: { alias: 'd', desc: 'it only prints unused deps to console, without removing them' } },
+  async handler ({ dryRun }) {
+    const packageFolder = process.cwd()
 
-  console.log(`running on folder ${packageFolder}`)
+    const unused = await depcheck(packageFolder, { skipMissing: true })
 
-  const unused = await depcheck(packageFolder, { skipMissing: true })
+    const { devDependencies, dependencies } = unused
 
-  const { devDependencies, dependencies } = unused
+    if (dryRun) {
+      log(`unused devDeps="${devDependencies.length ? devDependencies : 'no unused'}"; unused deps="${dependencies.length ? dependencies : 'no unused'}"`)
 
-  for (const devDep of devDependencies) {
-    const { stdout } = await execa('npm', ['uninstall', devDep]);
-    console.log(stdout)
+      return
+    }
+
+    await removeDeps(devDependencies)
+
+    await removeDeps(dependencies)
+
+    log(`Removed devDeps="${devDependencies}"; removed deps="${dependencies}"`)
   }
+})
+  .demandCommand()
+  .help()
+  .argv
 
-  console.log(`removed ${devDependencies.length} dev deps`)
-
-  for (const dep of dependencies) {
+async function removeDeps (deps) {
+  for (const dep of deps) {
     const { stdout } = await execa('npm', ['uninstall', dep]);
-    console.log(stdout)
+    log(stdout)
   }
 
-  console.log(`removed ${devDependencies.length} deps`)
+  // log(`removed ${deps.length} deps`)
 }
